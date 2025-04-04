@@ -1,7 +1,7 @@
 package mpt
 
 type Node interface {
-	Bytes() []byte
+	Value() any
 }
 
 func IsEmptyNode(node Node) bool {

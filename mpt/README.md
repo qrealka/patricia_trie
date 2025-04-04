@@ -2,7 +2,7 @@
 
 This is a simplified implementation of Ethereum's modified Merkle Patricia Trie 
 
-# API
+## API
 
 Ethereum's Merkle Patricia Trie is essentially a key-value mapping that provides the following standard methods:
 
@@ -14,3 +14,7 @@ type Trie interface {
   Del(key []byte, value []byte) bool
 }
 ```
+
+## Original code
+
+Full source code can be found [here](https://github.com/zhangchiqing/merkle-patricia-trie/tree/master)

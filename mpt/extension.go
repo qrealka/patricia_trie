@@ -14,6 +14,6 @@ func NewExtensionNode(nibbles []Nibble, next Node) *ExtensionNode {
 	}
 }
 
-func (e *ExtensionNode) Bytes() []byte {
+func (e *ExtensionNode) Value() any {
 	return nil
 }

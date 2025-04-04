@@ -2,6 +2,16 @@ package mpt
 
 import "fmt"
 
+// TrieInterface defines the interface for a Patricia Trie
+type TrieInterface interface {
+	Get(key string) (any, bool)
+	Put(key string, value any)
+	Del(key string) bool
+}
+
+// Ensure Trie implements TrieInterface
+var _ TrieInterface = (*Trie)(nil)
+
 type Trie struct {
 	root Node
 }
@@ -10,9 +20,10 @@ func NewTrie() *Trie {
 	return &Trie{}
 }
 
-func (t *Trie) Get(key []byte) ([]byte, bool) {
+// Get retrieves a value from the trie using a string key
+func (t *Trie) Get(key string) (any, bool) {
 	node := t.root
-	nibbles := FromBytes(key)
+	nibbles := FromString(key)
 	for {
 		if IsEmptyNode(node) {
 			return nil, false
@@ -23,12 +34,12 @@ func (t *Trie) Get(key []byte) ([]byte, bool) {
 			if matched != len(leaf.Path) || matched != len(nibbles) {
 				return nil, false
 			}
-			return leaf.Value, true
+			return leaf.Value(), true
 		}
 
 		if branch, ok := node.(*BranchNode); ok {
 			if len(nibbles) == 0 {
-				return branch.Value, branch.HasValue()
+				return branch.Value(), branch.HasValue()
 			}
 
 			b, remaining := nibbles[0], nibbles[1:]
@@ -54,16 +65,10 @@ func (t *Trie) Get(key []byte) ([]byte, bool) {
 	}
 }
 
-// Put adds a key value pair to the trie
-// In general, the rule is:
-// - When stopped at an EmptyNode, replace it with a new LeafNode with the remaining path.
-// - When stopped at a LeafNode, convert it to an ExtensionNode and add a new branch and a new LeafNode.
-// - When stopped at an ExtensionNode, convert it to another ExtensionNode with shorter path and create a new BranchNode points to the ExtensionNode.
-func (t *Trie) Put(key []byte, value []byte) {
-	// need to use pointer, so that I can update root in place without
-	// keeping trace of the parent node
+// Put adds a key-value pair to the trie using a string key and any value
+func (t *Trie) Put(key string, value any) {
 	node := &t.root
-	nibbles := FromBytes(key)
+	nibbles := FromString(key)
 	for {
 		if IsEmptyNode(*node) {
 			leaf := NewLeafNodeFromNibbles(nibbles, value)
@@ -85,14 +90,14 @@ func (t *Trie) Put(key []byte, value []byte) {
 			// if matched some nibbles, check if matches either all remaining nibbles
 			// or all leaf nibbles
 			if matched == len(leaf.Path) {
-				branch.SetValue(leaf.Value)
+				branch.SetValue(leaf.Value())
 			}
 
 			if matched == len(nibbles) {
 				branch.SetValue(value)
 			}
 
-			// if there is matched nibbles, an extension node will be created
+			// if there are matched nibbles, an extension node will be created
 			if matched > 0 {
 				// create an extension node for the shared nibbles
 				ext := NewExtensionNode(leaf.Path[:matched], branch)
@@ -109,7 +114,7 @@ func (t *Trie) Put(key []byte, value []byte) {
 
 				// 01020304, 0, 4
 				branchNibble, leafNibbles := leaf.Path[matched], leaf.Path[matched+1:]
-				newLeaf := NewLeafNodeFromNibbles(leafNibbles, leaf.Value) // not :matched+1
+				newLeaf := NewLeafNodeFromNibbles(leafNibbles, leaf.Value()) // not :matched+1
 				branch.SetBranch(branchNibble, newLeaf)
 			}
 
@@ -191,5 +196,11 @@ func (t *Trie) Put(key []byte, value []byte) {
 
 		panic("unknown type")
 	}
+}
 
+// Del deletes a key-value pair from the trie using a string key
+// Currently a stub that needs implementation
+func (t *Trie) Del(key string) bool {
+	// TODO: Implement deletion
+	return false
 }

@@ -2,7 +2,7 @@ package mpt
 
 type BranchNode struct {
 	Branches [16]Node
-	Value    []byte
+	value    any
 }
 
 var _ Node = (*BranchNode)(nil)
@@ -13,8 +13,8 @@ func NewBranchNode() *BranchNode {
 	}
 }
 
-func (b *BranchNode) Bytes() []byte {
-	return b.Value
+func (b *BranchNode) Value() any {
+	return b.value
 }
 
 func (b *BranchNode) SetBranch(nibble Nibble, node Node) {
@@ -25,14 +25,14 @@ func (b *BranchNode) RemoveBranch(nibble Nibble) {
 	b.Branches[int(nibble)] = nil
 }
 
-func (b *BranchNode) SetValue(value []byte) {
-	b.Value = value
+func (b *BranchNode) SetValue(value any) {
+	b.value = value
 }
 
 func (b *BranchNode) RemoveValue() {
-	b.Value = nil
+	b.value = nil
 }
 
 func (b BranchNode) HasValue() bool {
-	return b.Value != nil
+	return b.value != nil
 }

@@ -4,12 +4,12 @@ import "fmt"
 
 type LeafNode struct {
 	Path  []Nibble
-	Value []byte
+	value any
 }
 
 var _ Node = (*LeafNode)(nil)
 
-func NewLeafNodeFromNibbleBytes(nibbles []byte, value []byte) (*LeafNode, error) {
+func NewLeafNodeFromNibbleBytes(nibbles []byte, value any) (*LeafNode, error) {
 	ns, err := FromNibbleBytes(nibbles)
 	if err != nil {
 		return nil, fmt.Errorf("could not leaf node from nibbles: %w", err)
@@ -18,21 +18,25 @@ func NewLeafNodeFromNibbleBytes(nibbles []byte, value []byte) (*LeafNode, error)
 	return NewLeafNodeFromNibbles(ns, value), nil
 }
 
-func NewLeafNodeFromNibbles(nibbles []Nibble, value []byte) *LeafNode {
+func NewLeafNodeFromNibbles(nibbles []Nibble, value any) *LeafNode {
 	return &LeafNode{
 		Path:  nibbles,
-		Value: value,
+		value: value,
 	}
 }
 
 func NewLeafNodeFromKeyValue(key, value string) *LeafNode {
-	return NewLeafNodeFromBytes([]byte(key), []byte(value))
+	return NewLeafNodeFromString(key, value)
 }
 
-func NewLeafNodeFromBytes(key, value []byte) *LeafNode {
+func NewLeafNodeFromBytes(key []byte, value any) *LeafNode {
 	return NewLeafNodeFromNibbles(FromBytes(key), value)
 }
 
-func (l *LeafNode) Bytes() []byte {
-	return l.Value
+func NewLeafNodeFromString(key string, value any) *LeafNode {
+	return NewLeafNodeFromNibbles(FromString(key), value)
+}
+
+func (l *LeafNode) Value() any {
+	return l.value
 }

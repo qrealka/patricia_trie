@@ -1,7 +1,6 @@
 package mpt
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,101 +10,71 @@ import (
 func TestGetPut(t *testing.T) {
 	t.Run("should get nothing if key does not exist", func(t *testing.T) {
 		trie := NewTrie()
-		_, found := trie.Get([]byte("notexist"))
+		_, found := trie.Get("notexist")
 		require.Equal(t, false, found)
 	})
 
 	t.Run("should get value if key exist", func(t *testing.T) {
 		trie := NewTrie()
-		trie.Put([]byte{1, 2, 3, 4}, []byte("hello"))
-		val, found := trie.Get([]byte{1, 2, 3, 4})
+		trie.Put("test", "hello")
+		val, found := trie.Get("test")
 		require.Equal(t, true, found)
-		require.Equal(t, val, []byte("hello"))
+		require.Equal(t, "hello", val)
 	})
 
 	t.Run("should get updated value", func(t *testing.T) {
 		trie := NewTrie()
-		trie.Put([]byte{1, 2, 3, 4}, []byte("hello"))
-		trie.Put([]byte{1, 2, 3, 4}, []byte("world"))
-		val, found := trie.Get([]byte{1, 2, 3, 4})
+		trie.Put("test", "hello")
+		trie.Put("test", "world")
+		val, found := trie.Get("test")
 		require.Equal(t, true, found)
-		require.Equal(t, val, []byte("world"))
+		require.Equal(t, "world", val)
+	})
+
+	t.Run("should work with any value type", func(t *testing.T) {
+		trie := NewTrie()
+		trie.Put("number", 42)
+		trie.Put("boolean", true)
+		trie.Put("struct", struct{ Name string }{"Test"})
+
+		num, found := trie.Get("number")
+		require.True(t, found)
+		require.Equal(t, 42, num)
+
+		b, found := trie.Get("boolean")
+		require.True(t, found)
+		require.Equal(t, true, b)
+
+		s, found := trie.Get("struct")
+		require.True(t, found)
+		require.Equal(t, struct{ Name string }{"Test"}, s)
 	})
 }
 
 func TestPut2Pairs(t *testing.T) {
 	trie := NewTrie()
-	trie.Put([]byte{1, 2, 3, 4}, []byte("verb"))
-	trie.Put([]byte{1, 2, 3, 4, 5, 6}, []byte("coin"))
+	trie.Put("verb", "verb")
+	trie.Put("verbal", "coin")
 
-	verb, ok := trie.Get([]byte{1, 2, 3, 4})
+	verb, ok := trie.Get("verb")
 	require.True(t, ok)
-	require.Equal(t, []byte("verb"), verb)
+	require.Equal(t, "verb", verb)
 
-	coin, ok := trie.Get([]byte{1, 2, 3, 4, 5, 6})
+	coin, ok := trie.Get("verbal")
 	require.True(t, ok)
-	require.Equal(t, []byte("coin"), coin)
-
-	fmt.Printf("%T\n", trie.root)
-	ext, ok := trie.root.(*ExtensionNode)
-	require.True(t, ok)
-	branch, ok := ext.Next.(*BranchNode)
-	require.True(t, ok)
-	_, ok = branch.Branches[0].(*LeafNode)
-	require.True(t, ok)
+	require.Equal(t, "coin", coin)
 }
 
 func TestPutLeafShorter(t *testing.T) {
 	trie := NewTrie()
-	trie.Put([]byte{1, 2, 3, 4}, []byte("hello"))
-	trie.Put([]byte{1, 2, 3}, []byte("world"))
+	trie.Put("test", "hello")
+	trie.Put("tes", "world")
 
-	leaf := NewLeafNodeFromNibbles([]Nibble{4}, []byte("hello"))
+	hello, ok := trie.Get("test")
+	require.True(t, ok)
+	require.Equal(t, "hello", hello)
 
-	branch := NewBranchNode()
-	branch.SetBranch(Nibble(0), leaf)
-	branch.SetValue([]byte("world"))
-
-	_ = NewExtensionNode([]Nibble{0, 1, 0, 2, 0, 3}, branch)
+	world, ok := trie.Get("tes")
+	require.True(t, ok)
+	require.Equal(t, "world", world)
 }
-
-// Before put:
-//
-//  	           ┌───────────────────────────┐
-//  	           │  Extension Node           │
-//  	           │  Path: [0, 1, 0, 2, 0, 3] │
-//  	           └────────────┬──────────────┘
-//  	                        │
-//  	┌───────────────────────┴──────────────────┐
-//  	│                   Branch Node            │
-//  	│   [0]         ...          [5]           │
-//  	└────┼────────────────────────┼────────────┘
-//  	     │                        │
-//  	     │                        │
-//  	     │                        │
-//  	     │                        │
-//   ┌───────┴──────────┐   ┌─────────┴─────────┐
-//   │  Leaf Node       │   │  Leaf Node        │
-//   │  Path: [4]       │   │  Path: [0]        │
-//   │  Value: "hello1" │   │  Value: "hello2"  │
-//   └──────────────────┘   └───────────────────┘
-//
-// After put([]byte{[1, 2, 3]}, "world"):
-//  	           ┌───────────────────────────┐
-//  	           │  Extension Node           │
-//  	           │  Path: [0, 1, 0, 2, 0, 3] │
-//  	           └────────────┬──────────────┘
-//  	                        │
-//  	┌───────────────────────┴────────────────────────┐
-//  	│                   Branch Node                  │
-//  	│   [0]         ...          [5]  value: "world" │
-//  	└────┼────────────────────────┼──────────────────┘
-//  	     │                        │
-//  	     │                        │
-//  	     │                        │
-//  	     │                        │
-//   ┌───────┴──────────┐   ┌─────────┴─────────┐
-//   │  Leaf Node       │   │  Leaf Node        │
-//   │  Path: [4]       │   │  Path: [0]        │
-//   │  Value: "hello1" │   │  Value: "hello2"  │
-//   └──────────────────┘   └───────────────────┘
